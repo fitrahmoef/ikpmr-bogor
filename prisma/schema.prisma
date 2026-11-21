@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TxType {
+  IN
+  OUT
+}
+
+enum OrderKind {
+  TICKET
+  MERCH
+}
+
+enum OrderStatus {
+  PENDING   // menunggu bukti bayar
+  REVIEW    // bukti sudah diunggah, menunggu verifikasi
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(MEMBER)
+  status       MemberStatus @default(PENDING)
+  position     String?      // jabatan pengurus, mis. "Ketua umum"
+  division     String?      // Akademik, Sosial, Budaya, Teknologi, Humas
+  university   String?
+  regency      String?      // kabupaten/kota asal di Riau, kunci di lib/riau.ts
+  phone        String?
+  bio          String?
+  featured     Boolean      @default(false) // tampil sebagai pengurus inti di landing
+  createdAt    DateTime     @default(now())
+
+  registrations EventRegistration[]
+  announcements Announcement[]
+  transactions  Transaction[]
+  photos        GalleryPhoto[]
+  orders        Order[]
+  sent          ChatMessage[] @relation("sent")
+  received      ChatMessage[] @relation("received")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  place       String
+  division    String
+  capacity    Int      @default(100)
+  description String?
+  imageUrl    String?
+  ticketPrice Int      @default(0) // rupiah; 0 = gratis, cukup daftar
+  ticketQuota Int?     // tiket berbayar yang tersisa untuk dijual; null = ikut kapasitas
+  createdAt   DateTime @default(now())
+
+  registrations EventRegistration[]
+  orderItems    OrderItem[]
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  priority  Priority @default(MEDIUM)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  type         TxType
+  amount       Int      // rupiah
+  description  String
+  date         DateTime
+  recordedById String?
+  recordedBy   User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+}
+
+model GalleryPhoto {
+  id           String   @id @default(cuid())
+  url          String
+  caption      String
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+}
+
+// recipientId null = obrolan grup semua anggota
+model ChatMessage {
+  id          String   @id @default(cuid())
+  body        String   // boleh kosong kalau pesan hanya berisi file
+  fileUrl     String?
+  fileName    String?
+  fileType    String?
+  fileSize    Int?
+  senderId    String
+  recipientId String?
+  sender      User     @relation("sent", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User?    @relation("received", fields: [recipientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, createdAt])
+  @@index([senderId, recipientId, createdAt])
+}
+
+// Teks dan foto landing page yang bisa diubah admin. Kunci dan nilai bawaan ada di lib/content.ts.
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      // rupiah
+  stock       Int      @default(0)
+  variants    String?  // dipisah koma, mis. "S,M,L,XL"
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  code       String      @unique // kode pendek untuk transfer dan e-tiket
+  kind       OrderKind
+  status     OrderStatus @default(PENDING)
+  buyerName  String
+  buyerEmail String
+  buyerPhone String
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  total      Int
+  proofUrl   String?
+  note       String?     // catatan admin, mis. alasan penolakan
+  checkedIn  Boolean     @default(false)
+  paidAt     DateTime?
+  createdAt  DateTime    @default(now())
+
+  items OrderItem[]
+
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String   // nama saat dibeli
+  variant   String?
+  unitPrice Int
+  qty       Int
+}

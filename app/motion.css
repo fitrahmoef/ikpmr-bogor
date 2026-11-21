@@ -1,0 +1,136 @@
+/* ---------- Scroll transitions ----------
+   One curve, one direction. Content rises into place as it enters the viewport,
+   headings unmask line by line, the section hairline draws, figures count up. */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+.reveal.visible, .visible .reveal { opacity: 1; transform: none; }
+
+/* heading lines slide up from behind a mask */
+.mask-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.mask-line > span {
+  display: block;
+  transform: translateY(105%);
+  transition: transform 800ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+.visible .mask-line > span, .mask-line.visible > span { transform: none; }
+
+/* the rebung mark draws its outline */
+[data-reveal] .rebung path, .hero-copy .rebung path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.visible .rebung path, .hero-copy .rebung path {
+  animation: draw 900ms var(--ease) var(--d, 200ms) forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* section hairline grows from the left */
+.rule {
+  height: 1px;
+  background: var(--line-strong);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1000ms var(--ease) 150ms;
+  margin-bottom: 48px;
+}
+.visible .rule, .rule.visible { transform: scaleX(1); }
+
+/* ---------- Opening ----------
+   Shown once per session. A songket band weaves across, the name sets, then the
+   curtain lifts and hands over to the hero where the hall assembles. */
+.opening {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: var(--songket-green-deep);
+  color: var(--songket-cream);
+  transition: transform 800ms var(--ease);
+}
+.opening.lift { transform: translateY(-100%); }
+.opening-inner { display: grid; justify-items: center; gap: 24px; width: min(560px, 86vw); }
+.opening-logo {
+  width: 72px; height: 72px; border-radius: 50%;
+  opacity: 0; transform: scale(0.96);
+  animation: logoIn 600ms var(--ease) 150ms forwards;
+}
+@keyframes logoIn { to { opacity: 1; transform: none; } }
+.opening-band { width: 100%; height: 56px; color: var(--songket-gold); }
+.opening-band path, .opening-band line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1000ms var(--ease) forwards;
+}
+.opening-name {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.opening-name .mask-line > span { transition-duration: 700ms; }
+.opening-sub { font-size: 14px; color: rgba(243, 234, 214, 0.64); opacity: 0; animation: fadeIn 500ms var(--ease) 900ms forwards; }
+@keyframes fadeIn { to { opacity: 1; } }
+.opening-skip {
+  position: absolute;
+  right: 24px; bottom: 24px;
+  height: 36px; padding: 0 16px;
+  border-radius: var(--r-control);
+  border: 1px solid rgba(243, 234, 214, 0.16);
+  background: transparent;
+  color: rgba(243, 234, 214, 0.72);
+  font: 500 14px var(--font-body);
+  cursor: pointer;
+  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+}
+.opening-skip:hover { color: var(--songket-cream); border-color: rgba(243, 234, 214, 0.32); }
+
+/* ---------- Theme switch ---------- */
+.theme-toggle {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+.theme-toggle svg { width: 18px; height: 18px; }
+html.theme-switching *, html.theme-switching *::before { transition: background-color 300ms var(--ease), border-color 300ms var(--ease), color 300ms var(--ease) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .mask-line > span, .rule { transition: none; opacity: 1; transform: none; }
+  .visible .rebung path, .hero-copy .rebung path, .opening-band path, .opening-band line { animation: none; stroke-dashoffset: 0; }
+  #hero .hero-copy { opacity: 1; translate: none; }
+}
+
+.skip-opening .opening { display: none; }
+html.opening-lock { overflow: hidden; }
+/* the hero waits behind the curtain and rises as it lifts */
+html.opening-lock .hero-copy, html.opening-lock .hero-caption { animation-play-state: paused; }
+
+/* ranked bars grow when their section is revealed */
+[data-reveal] .rank-bar > span { animation: none; transform: scaleX(0); transition: transform 900ms var(--ease); }
+[data-reveal].visible .rank-bar > span { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) { [data-reveal] .rank-bar > span { transform: none; transition: none; } }
+
+/* left and right entrances: each column comes in from its own side */
+.reveal.from-left { transform: translateX(-56px); }
+.reveal.from-right { transform: translateX(56px); }
+.reveal.from-left, .reveal.from-right {
+  transition: opacity 800ms var(--ease), transform 900ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+.visible .reveal.from-left, .visible .reveal.from-right,
+.reveal.from-left.visible, .reveal.from-right.visible { transform: none; }
+section { overflow-x: clip; }
+@media (prefers-reduced-motion: reduce) { .reveal.from-left, .reveal.from-right { transform: none; } }

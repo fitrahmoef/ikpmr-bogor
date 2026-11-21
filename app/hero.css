@@ -1,0 +1,124 @@
+/* Scroll-driven hero, HUD labels, preloader, fog between sections and inertial scroll.
+   Monochrome HUD in a mono face; the hall itself stays the only rich thing on screen. */
+
+:root { --font-mono: var(--font-jbmono), ui-monospace, monospace; }
+
+/* ---------- pinned hero ---------- */
+#hero.pin-hero {
+  display: block;
+  min-height: 0;
+  height: 300vh;
+  height: 300svh;
+  padding: 0;
+  overflow: visible;
+}
+.pin-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 112px 32px 96px;
+}
+#hero.pin-hero .hero-scene { position: absolute; inset: 0; margin: 0; height: auto; cursor: default; }
+#hero.pin-hero .hero-scene:active { cursor: default; }
+.pin-hero .hero-copy { animation: none; }
+.pin-hero .hero-title, .pin-hero .hero-subtitle { min-height: 1lh; }
+.caret { display: inline-block; width: 0.5em; height: 0.82em; margin-left: 0.06em; vertical-align: -0.04em; background: currentColor; opacity: 0.85; }
+
+/* HUD: a dot on the part, a hairline leader, two lines of mono text */
+.hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.hud-tag { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform, opacity; }
+.hud-dot { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--accent); background: var(--bg); }
+.hud-line { position: absolute; top: 0; height: 1px; width: 56px; background: var(--text-3); }
+.hud-tag.r .hud-line { left: 6px; }
+.hud-tag.l .hud-line { right: 6px; }
+.hud-text { position: absolute; top: 0; transform: translateY(-50%); display: grid; gap: 2px; white-space: nowrap; font-family: var(--font-mono); }
+.hud-tag.r .hud-text { left: 70px; }
+.hud-tag.l .hud-text { right: 70px; text-align: right; }
+.hud-text b { font-weight: 500; font-size: 12px; color: var(--text); }
+.hud-text span { font-size: 11px; color: var(--text-3); }
+
+.hero-hud-foot {
+  position: absolute;
+  z-index: 2;
+  left: 32px; right: 32px; bottom: 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+.hud-mono { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.hud-stage { font-size: 13px; color: var(--text-2); }
+.hud-track { width: 160px; height: 1px; background: var(--line-strong); overflow: hidden; }
+.hud-track > span { display: block; height: 100%; background: var(--accent); transform-origin: left; }
+.hud-hint { margin-left: auto; }
+
+.pin-hero.still { height: auto; }
+.pin-hero.still .pin-sticky { position: relative; }
+
+/* ---------- preloader ---------- */
+.opening-band path, .opening-band line, .opening-mark path { animation: none; }
+.opening-mark { width: 120px; height: 90px; color: var(--songket-gold); }
+.opening-band { height: 24px; }
+.opening-name { font-family: var(--font-display); font-size: 36px; }
+.opening-meta { width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 13px; color: rgba(243, 234, 214, 0.64); }
+.opening-pct { font-family: var(--font-mono); font-size: 13px; color: var(--songket-gold); font-variant-numeric: tabular-nums; }
+
+/* ---------- pucuk rebung seam between sections ----------
+   A songket tepi stitched across each section boundary: a hairline with a row of rebung shoots.
+   It weaves out from the centre as --seam goes 0 -> 1 (set by SeamDriver). */
+main > section:not(#hero) { position: relative; }
+main > section:not(#hero)::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 0;
+  width: min(480px, 64vw);
+  height: 12px;
+  transform: translate(-50%, -100%);
+  background: var(--accent);
+  opacity: calc(0.25 + var(--seam, 0) * 0.45);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12' fill='none' stroke='%23000' stroke-width='1'%3E%3Cpath d='M0 11.5h16M3 11.5 8 2.5l5 9M6 11.5l2-4 2 4'/%3E%3C/svg%3E") center bottom / 16px 12px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12' fill='none' stroke='%23000' stroke-width='1'%3E%3Cpath d='M0 11.5h16M3 11.5 8 2.5l5 9M6 11.5l2-4 2 4'/%3E%3C/svg%3E") center bottom / 16px 12px repeat-x;
+  clip-path: inset(0 calc((1 - var(--seam, 0)) * 50%));
+  pointer-events: none;
+}
+
+/* ---------- lenis ---------- */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ---------- small screens ---------- */
+@media (max-width: 1024px) {
+  .pin-sticky { flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 96px 32px 72px; }
+  #hero.pin-hero .hero-scene, .pin-hero .hud { position: absolute; inset: 40% 0 0 0; order: 0; } /* HUD shares the canvas box */
+  .hud-text b { font-size: 11px; }
+  .hud-text span { display: none; }
+  .hud-line { width: 32px; }
+  .hud-tag.r .hud-text { left: 44px; }
+  .hud-tag.l .hud-text { right: 44px; }
+}
+@media (max-width: 768px) {
+  .pin-sticky { padding: 88px 20px 64px; }
+  #hero.pin-hero .hero-scene, .pin-hero .hud { inset: 46% 0 0 0; }
+  .hero-hud-foot { left: 20px; right: 20px; bottom: 20px; gap: 12px; }
+  .hud-track { width: 72px; }
+  .hud-hint { display: none; }
+}
+
+/* phones and tablets: once PinnedHero has measured the text, the canvas fills the screen and the
+   scene lowers its own view to keep the hall under the text; the HUD shares the canvas box */
+@media (max-width: 1024px) {
+  #hero.pin-hero .pin-sticky.measured .hero-scene,
+  #hero.pin-hero .pin-sticky.measured .hud { inset: 0; }
+}
+@media (max-width: 1024px) {
+  /* labels land on the facade on small screens; a backing in the page colour keeps them legible */
+  .hud-text b { padding: 2px 6px; border-radius: 4px; background: color-mix(in oklch, var(--bg) 82%, transparent); }
+}
